@@ -23,7 +23,8 @@ pub(crate) mod quic;
 pub(crate) mod ticketer;
 #[cfg(feature = "tls12")]
 pub(crate) mod tls12;
-pub(crate) mod tls13;
+/// tls13
+pub mod tls13;
 
 /// A `CryptoProvider` backed by the [*ring*] crate.
 ///

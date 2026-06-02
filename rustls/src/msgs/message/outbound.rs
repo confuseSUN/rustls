@@ -212,7 +212,7 @@ impl OutboundOpaqueMessage {
 }
 
 #[derive(Clone, Debug)]
-pub struct PrefixedPayload(Vec<u8>);
+pub struct PrefixedPayload(pub Vec<u8>);
 
 impl PrefixedPayload {
     pub fn with_capacity(capacity: usize) -> Self {
