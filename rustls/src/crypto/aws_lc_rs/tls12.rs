@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use alloc::boxed::Box;
 
 use aws_lc_rs::{aead, tls_prf};
@@ -14,6 +16,7 @@ use crate::msgs::fragmenter::MAX_FRAGMENT_LEN;
 use crate::msgs::message::{
     InboundPlainMessage, OutboundOpaqueMessage, OutboundPlainMessage, PrefixedPayload,
 };
+use crate::record_layer;
 use crate::suites::{CipherSuiteCommon, ConnectionTrafficSecrets, SupportedCipherSuite};
 use crate::tls12::Tls12CipherSuite;
 use crate::version::TLS12;
@@ -306,6 +309,7 @@ impl MessageEncrypter for GcmMessageEncrypter {
         &mut self,
         msg: OutboundPlainMessage<'_>,
         seq: u64,
+        _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error> {
         let total_len = self.encrypted_payload_len(msg.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);
@@ -387,6 +391,7 @@ impl MessageEncrypter for ChaCha20Poly1305MessageEncrypter {
         &mut self,
         msg: OutboundPlainMessage<'_>,
         seq: u64,
+        _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error> {
         let total_len = self.encrypted_payload_len(msg.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);

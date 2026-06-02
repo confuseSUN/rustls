@@ -12,8 +12,9 @@ use std::io::{Read, Write, stdout};
 use std::net::TcpStream;
 use std::sync::Arc;
 
-use rustls::RootCertStore;
 use rustls::version::TLS13;
+use rustls::{RootCertStore, record_layer};
+use std::sync::Mutex;
 
 fn main() {
     let root_store = RootCertStore {
@@ -27,8 +28,12 @@ fn main() {
     // Allow using SSLKEYLOGFILE.
     config.key_log = Arc::new(rustls::KeyLogFile::new());
 
+    let prover_nonce = Arc::new(Mutex::new(record_layer::Nonce::default()));
+
     let server_name = "www.rust-lang.org".try_into().unwrap();
     let mut conn = rustls::ClientConnection::new(Arc::new(config), server_name).unwrap();
+    conn.set_prover_nonce(Arc::clone(&prover_nonce));
+
     let mut sock = TcpStream::connect("www.rust-lang.org:443").unwrap();
     let mut tls = rustls::Stream::new(&mut conn, &mut sock);
     tls.write_all(
@@ -42,6 +47,7 @@ fn main() {
         .as_bytes(),
     )
     .unwrap();
+    println!("nonce:{:?}", prover_nonce.lock().unwrap().0);
     let ciphersuite = tls
         .conn
         .negotiated_cipher_suite()

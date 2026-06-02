@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use core::fmt;
+use std::sync::{Arc, Mutex};
 
 use zeroize::Zeroize;
 
@@ -11,6 +12,7 @@ pub use crate::msgs::message::{
     BorrowedPayload, InboundOpaqueMessage, InboundPlainMessage, OutboundChunks,
     OutboundOpaqueMessage, OutboundPlainMessage, PlainMessage, PrefixedPayload,
 };
+use crate::record_layer;
 use crate::suites::ConnectionTrafficSecrets;
 
 /// Factory trait for building `MessageEncrypter` and `MessageDecrypter` for a TLS1.3 cipher suite.
@@ -152,6 +154,7 @@ pub trait MessageEncrypter: Send + Sync {
         &mut self,
         msg: OutboundPlainMessage<'_>,
         seq: u64,
+        prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error>;
 
     /// Return the length of the ciphertext that results from encrypting plaintext of
@@ -327,6 +330,7 @@ impl MessageEncrypter for InvalidMessageEncrypter {
         &mut self,
         _m: OutboundPlainMessage<'_>,
         _seq: u64,
+        _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error> {
         Err(Error::EncryptError)
     }

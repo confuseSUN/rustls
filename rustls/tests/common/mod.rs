@@ -1,15 +1,15 @@
 #![allow(dead_code)]
 #![allow(clippy::disallowed_types, clippy::duplicate_mod)]
 
-use std::io;
-use std::ops::DerefMut;
-use std::sync::OnceLock;
-
 use pki_types::pem::PemObject;
 use pki_types::{
     CertificateDer, CertificateRevocationListDer, PrivateKeyDer, PrivatePkcs8KeyDer, ServerName,
     SubjectPublicKeyInfoDer, UnixTime,
 };
+use std::io;
+use std::ops::DerefMut;
+use std::sync::Mutex;
+use std::sync::OnceLock;
 
 use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier};
 use rustls::client::{
@@ -33,6 +33,7 @@ use rustls::{
     ClientConfig, ClientConnection, Connection, ConnectionCommon, ContentType,
     DigitallySignedStruct, DistinguishedName, Error, InconsistentKeys, NamedGroup, ProtocolVersion,
     RootCertStore, ServerConfig, ServerConnection, SideData, SignatureScheme, SupportedCipherSuite,
+    record_layer,
 };
 
 use webpki::anchor_from_trusted_cert;
@@ -1386,9 +1387,10 @@ impl RawTls {
         msg: &PlainMessage,
         peer: &mut impl DerefMut<Target = ConnectionCommon<impl SideData>>,
     ) {
+        let prover_nonce = Arc::new(Mutex::new(record_layer::Nonce::default()));
         let data = self
             .encrypter
-            .encrypt(msg.borrow_outbound(), self.enc_seq)
+            .encrypt(msg.borrow_outbound(), self.enc_seq, prover_nonce.clone())
             .unwrap()
             .encode();
         self.enc_seq += 1;
@@ -1535,6 +1537,7 @@ mod plaintext {
             &mut self,
             msg: OutboundPlainMessage<'_>,
             _seq: u64,
+            _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
         ) -> Result<OutboundOpaqueMessage, Error> {
             let mut payload = PrefixedPayload::with_capacity(msg.payload.len());
             payload.extend_from_chunks(&msg.payload);

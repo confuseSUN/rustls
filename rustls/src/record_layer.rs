@@ -1,5 +1,6 @@
 use alloc::boxed::Box;
 use core::cmp::min;
+use std::sync::{Arc, Mutex};
 
 use crate::crypto::cipher::{InboundOpaqueMessage, MessageDecrypter, MessageEncrypter};
 use crate::error::Error;
@@ -18,6 +19,10 @@ enum DirectionState {
     Active,
 }
 
+/// Nonce for prover
+#[derive(Debug, Default)]
+pub struct Nonce(pub [u8; 12]);
+
 /// Record layer that tracks decryption and encryption keys.
 pub(crate) struct RecordLayer {
     message_encrypter: Box<dyn MessageEncrypter>,
@@ -33,6 +38,8 @@ pub(crate) struct RecordLayer {
     // should be swallowed by the caller.  This struct tracks the amount
     // of message size this is allowed for.
     trial_decryption_len: Option<usize>,
+
+    pub prover_nonce: Arc<Mutex<Nonce>>,
 }
 
 impl RecordLayer {
@@ -48,6 +55,7 @@ impl RecordLayer {
             encrypt_state: DirectionState::Invalid,
             decrypt_state: DirectionState::Invalid,
             trial_decryption_len: None,
+            prover_nonce: Default::default(),
         }
     }
 
@@ -113,7 +121,7 @@ impl RecordLayer {
         let seq = self.write_seq;
         self.write_seq += 1;
         self.message_encrypter
-            .encrypt(plain, seq)
+            .encrypt(plain, seq, Arc::clone(&self.prover_nonce))
             .unwrap()
     }
 

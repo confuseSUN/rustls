@@ -631,17 +631,18 @@ mod connection {
     use core::fmt;
     use core::ops::{Deref, DerefMut};
     use std::io;
+    use std::sync::Mutex;
 
     use pki_types::ServerName;
 
     use super::ClientConnectionData;
-    use crate::ClientConfig;
     use crate::client::EchStatus;
     use crate::common_state::Protocol;
     use crate::conn::{ConnectionCommon, ConnectionCore};
     use crate::error::Error;
     use crate::suites::ExtractedSecrets;
     use crate::sync::Arc;
+    use crate::{ClientConfig, record_layer};
 
     /// Stub that implements io::Write and dispatches to `write_early_data`.
     pub struct WriteEarlyData<'a> {
@@ -704,6 +705,15 @@ mod connection {
         /// name of the server we want to talk to.
         pub fn new(config: Arc<ClientConfig>, name: ServerName<'static>) -> Result<Self, Error> {
             Self::new_with_alpn(Arc::clone(&config), name, config.alpn_protocols.clone())
+        }
+
+        /// Set nonce for prover
+        pub fn set_prover_nonce(&mut self, prove_nonce: Arc<Mutex<record_layer::Nonce>>) {
+            self.inner
+                .core
+                .common_state
+                .record_layer
+                .prover_nonce = prove_nonce;
         }
 
         /// Make a new ClientConnection with custom ALPN protocols.

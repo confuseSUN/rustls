@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use rustls::client::WebPkiServerVerifier;
 use rustls::client::danger::ServerCertVerifier;
@@ -19,7 +19,7 @@ use rustls::pki_types::{
 use rustls::{
     CipherSuite, ConnectionTrafficSecrets, ContentType, Error, NamedGroup, PeerMisbehaved,
     ProtocolVersion, RootCertStore, SignatureAlgorithm, SignatureScheme, SupportedCipherSuite,
-    Tls12CipherSuite, Tls13CipherSuite, crypto, server, sign,
+    Tls12CipherSuite, Tls13CipherSuite, crypto, record_layer, server, sign,
 };
 
 /// This is a `CryptoProvider` that provides NO SECURITY and is for fuzzing only.
@@ -276,6 +276,7 @@ impl MessageEncrypter for Tls13Cipher {
         &mut self,
         m: OutboundPlainMessage,
         seq: u64,
+        _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error> {
         let total_len = self.encrypted_payload_len(m.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);
@@ -345,6 +346,7 @@ impl MessageEncrypter for Tls12Cipher {
         &mut self,
         m: OutboundPlainMessage,
         seq: u64,
+        _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error> {
         let total_len = self.encrypted_payload_len(m.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);

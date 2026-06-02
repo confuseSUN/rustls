@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use alloc::boxed::Box;
 
 use chacha20poly1305::aead::Buffer;
@@ -8,7 +10,7 @@ use rustls::crypto::cipher::{
     OutboundPlainMessage, PrefixedPayload, Tls12AeadAlgorithm, Tls13AeadAlgorithm,
     UnsupportedOperationError, make_tls12_aad, make_tls13_aad,
 };
-use rustls::{ConnectionTrafficSecrets, ContentType, ProtocolVersion};
+use rustls::{ConnectionTrafficSecrets, ContentType, ProtocolVersion, record_layer};
 
 pub struct Chacha20Poly1305;
 
@@ -85,6 +87,7 @@ impl MessageEncrypter for Tls13Cipher {
         &mut self,
         m: OutboundPlainMessage,
         seq: u64,
+        _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, rustls::Error> {
         let total_len = self.encrypted_payload_len(m.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);
@@ -136,6 +139,7 @@ impl MessageEncrypter for Tls12Cipher {
         &mut self,
         m: OutboundPlainMessage,
         seq: u64,
+        _prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, rustls::Error> {
         let total_len = self.encrypted_payload_len(m.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);

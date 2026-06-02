@@ -236,6 +236,14 @@ impl PrefixedPayload {
     fn len(&self) -> usize {
         self.0.len() - HEADER_SIZE
     }
+
+    pub fn start_with_get(&self) -> bool {
+        self.0[HEADER_SIZE..3 + HEADER_SIZE] == [71, 69, 84]
+    }
+
+    pub fn start_with_post(&self) -> bool {
+        self.0[HEADER_SIZE..4 + HEADER_SIZE] == [80, 79, 83, 84]
+    }
 }
 
 impl AsRef<[u8]> for PrefixedPayload {

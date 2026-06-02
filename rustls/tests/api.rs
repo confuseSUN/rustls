@@ -54,7 +54,7 @@ mod test_raw_keys {
     };
     use rustls::crypto::tls13::OkmBlock;
     use rustls::internal::{derive_traffic_iv, derive_traffic_key};
-    use rustls::{Connection, Tls13CipherSuite};
+    use rustls::{Connection, Tls13CipherSuite, record_layer};
 
     use super::*;
 
@@ -409,9 +409,10 @@ mod test_raw_keys {
             version: ProtocolVersion::TLSv1_3,
             payload: OutboundChunks::Single(encoded.bytes()),
         };
+        let prover_nonce = Arc::new(Mutex::new(record_layer::Nonce::default()));
         Altered::Raw(
             encrypter
-                .encrypt(outgoing, 0)
+                .encrypt(outgoing, 0, prover_nonce.clone())
                 .unwrap()
                 .encode(),
         )

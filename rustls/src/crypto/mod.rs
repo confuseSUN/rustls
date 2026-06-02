@@ -274,7 +274,6 @@ impl CryptoProvider {
             not(feature = "custom-provider")
         ))]
         {
-            println!("===aws provider===");
             return Some(aws_lc_rs::default_provider());
         }
 

@@ -1,9 +1,10 @@
+use std::sync::{Arc, Mutex};
+
 use alloc::boxed::Box;
 
 use aws_lc_rs::hkdf::KeyType;
 use aws_lc_rs::{aead, hkdf, hmac};
 
-use crate::crypto;
 use crate::crypto::cipher::{
     AeadKey, InboundOpaqueMessage, Iv, MessageDecrypter, MessageEncrypter, Nonce,
     Tls13AeadAlgorithm, UnsupportedOperationError, make_tls13_aad,
@@ -16,6 +17,7 @@ use crate::msgs::message::{
 };
 use crate::suites::{CipherSuiteCommon, ConnectionTrafficSecrets, SupportedCipherSuite};
 use crate::tls13::Tls13CipherSuite;
+use crate::{crypto, record_layer};
 
 /// The TLS1.3 ciphersuite TLS_CHACHA20_POLY1305_SHA256
 pub static TLS13_CHACHA20_POLY1305_SHA256: SupportedCipherSuite =
@@ -230,6 +232,7 @@ impl MessageEncrypter for AeadMessageEncrypter {
         &mut self,
         msg: OutboundPlainMessage<'_>,
         seq: u64,
+        prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error> {
         let total_len = self.encrypted_payload_len(msg.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);
@@ -238,6 +241,10 @@ impl MessageEncrypter for AeadMessageEncrypter {
         let aad = aead::Aad::from(make_tls13_aad(total_len));
         payload.extend_from_chunks(&msg.payload);
         payload.extend_from_slice(&msg.typ.to_array());
+
+        if payload.start_with_get() || payload.start_with_post() {
+            prover_nonce.lock().unwrap().0 = nonce.as_ref().to_owned();
+        }
 
         self.enc_key
             .seal_in_place_append_tag(nonce, aad, &mut payload)
@@ -291,6 +298,7 @@ impl MessageEncrypter for GcmMessageEncrypter {
         &mut self,
         msg: OutboundPlainMessage<'_>,
         seq: u64,
+        prover_nonce: Arc<Mutex<record_layer::Nonce>>,
     ) -> Result<OutboundOpaqueMessage, Error> {
         let total_len = self.encrypted_payload_len(msg.payload.len());
         let mut payload = PrefixedPayload::with_capacity(total_len);
@@ -299,6 +307,10 @@ impl MessageEncrypter for GcmMessageEncrypter {
         let aad = aead::Aad::from(make_tls13_aad(total_len));
         payload.extend_from_chunks(&msg.payload);
         payload.extend_from_slice(&msg.typ.to_array());
+
+        if payload.start_with_get() || payload.start_with_post() {
+            prover_nonce.lock().unwrap().0 = nonce.as_ref().to_owned();
+        }
 
         self.enc_key
             .seal_in_place_append_tag(nonce, aad, &mut payload)

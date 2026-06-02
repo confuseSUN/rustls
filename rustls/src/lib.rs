@@ -378,7 +378,7 @@
 #![cfg_attr(read_buf, feature(read_buf))]
 #![cfg_attr(read_buf, feature(core_io_borrowed_buf))]
 #![cfg_attr(bench, feature(test))]
-#![no_std]
+// #![no_std]
 
 extern crate alloc;
 // This `extern crate` plus the `#![no_std]` attribute changes the default prelude from
@@ -436,7 +436,8 @@ mod hash_hs;
 #[cfg(any(feature = "std", feature = "hashbrown"))]
 mod limited_cache;
 mod rand;
-mod record_layer;
+/// record layer
+pub mod record_layer;
 #[cfg(feature = "std")]
 mod stream;
 #[cfg(feature = "tls12")]
