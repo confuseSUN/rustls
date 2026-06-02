@@ -233,7 +233,7 @@ impl PrefixedPayload {
         self.0.truncate(len + HEADER_SIZE)
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len() - HEADER_SIZE
     }
 

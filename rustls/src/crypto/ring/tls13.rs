@@ -192,9 +192,12 @@ impl AeadAlgorithm {
     }
 }
 
-struct Tls13MessageEncrypter {
-    enc_key: aead::LessSafeKey,
-    iv: Iv,
+/// Tls13MessageEncrypter
+pub struct Tls13MessageEncrypter {
+   /// enc key
+   pub enc_key: aead::LessSafeKey,
+   /// IV
+   pub iv: Iv,
 }
 
 struct Tls13MessageDecrypter {
