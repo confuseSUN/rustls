@@ -13,12 +13,14 @@ use std::net::TcpStream;
 use std::sync::Arc;
 
 use rustls::RootCertStore;
+use rustls::version::TLS13;
 
 fn main() {
     let root_store = RootCertStore {
         roots: webpki_roots::TLS_SERVER_ROOTS.into(),
     };
-    let mut config = rustls::ClientConfig::builder()
+
+    let mut config = rustls::ClientConfig::builder_with_protocol_versions(&[&TLS13])
         .with_root_certificates(root_store)
         .with_no_client_auth();
 

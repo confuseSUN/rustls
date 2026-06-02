@@ -100,7 +100,9 @@ impl KeyProvider for AwsLcRs {
 /// shouldn't be enabled by most applications.
 pub static DEFAULT_CIPHER_SUITES: &[SupportedCipherSuite] = &[
     // TLS1.3 suites
+    #[cfg(feature = "tls13_aes_gcm")]
     tls13::TLS13_AES_256_GCM_SHA384,
+    #[cfg(feature = "tls13_aes_gcm")]
     tls13::TLS13_AES_128_GCM_SHA256,
     #[cfg(not(feature = "fips"))]
     tls13::TLS13_CHACHA20_POLY1305_SHA256,
